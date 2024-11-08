@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 import warnings
 
 # Suprimir avisos
-warninfilterwarnings("ignore")
+warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Configuração do Tesseract
@@ -57,16 +57,16 @@ def reconhecer_comando(timeout=3):
             return None
 
 def selecionar_idioma_por_voz():
-    while True:
-        falar("Por favor, me diga para qual idioma você gostaria de traduzir.")
-        comando = reconhecer_comando()
-        if comando:
-            for nome, codigo in idiomas.items():
-                if nome.lower() in comando:
-                    falar(f"Entendi que você quer traduzir para {nome}. Isso está correto?")
-                    confirmacao = reconhecer_comando()
-                    if confirmacao and ('sim' in confirmacao or 'correto' in confirmacao):
-                        return codigo
+    falar("Por favor, me diga para qual idioma você gostaria de traduzir.")
+    comando = reconhecer_comando()
+    if comando:
+        for nome, codigo in idiomas.items():
+            if nome.lower() in comando:
+                falar(f"Entendi que você quer traduzir para {nome}. Isso está correto?")
+                confirmacao = reconhecer_comando()
+                if confirmacao and ('sim' in confirmacao or 'correto' in confirmacao):
+                    return codigo
+    else:
         falar("Desculpe, não consegui identificar o idioma. Vamos tentar novamente?")
 
 def load_trained_model(model_path):
@@ -134,7 +134,7 @@ def main():
     falar("Ótimo! Agora que escolhemos o idioma, você pode me pedir para capturar uma imagem ou encerrar o programa. O que você prefere?")
 
     # Corrigindo o caminho do modelo
-    model_path = f"{os.getcwd()}\dataset\train.h5"
+    model_path = f"{os.getcwd()}/dataset/train.h5"
     model = load_trained_model(model_path)
 
     cap = cv2.VideoCapture(0)
