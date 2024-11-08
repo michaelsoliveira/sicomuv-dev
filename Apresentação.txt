@@ -1,0 +1,186 @@
+import cv2
+import pytesseract
+import os
+import numpy as np
+import mtranslate
+import keras.models
+import speech_recognition as sr
+import threading
+import pyttsx3
+
+# Configuração do Tesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+os.environ['TESSDATA_PREFIX'] = r'C:\Program Files\Tesseract-OCR\tessdata'
+tessdata_dir_config = '--tessdata-dir "C:\\Program Files\\Tesseract-OCR\\tessdata"'
+
+# Dicionário de idiomas suportados
+idiomas = {
+    'Afrikaans': 'af', 'Árabe': 'ar', 'Bengali': 'bn', 'Cantonês': 'yue', 'Catalão': 'ca',
+    'Chinês': 'zh-tw', 'Croata': 'hr', 'Checo': 'cs', 'Dinamarquês': 'da', 'Holandês': 'nl',
+    'Inglês': 'en', 'Filipino': 'fil', 'Finlandês': 'fi', 'Francês': 'fr', 'Alemão': 'de',
+    'Grego': 'el', 'Gujarati': 'gu', 'Hebraico': 'he', 'Hindi': 'hi', 'Húngaro': 'hu',
+    'Indonésio': 'id', 'Italiano': 'it', 'Japonês': 'ja', 'Javanês': 'jw', 'Coreano': 'ko',
+    'Letão': 'lv', 'Lituano': 'lt', 'Malaio': 'ms', 'Marata': 'mr', 'Norueguês': 'no',
+    'Polonês': 'pl', 'Português (Brasil)': 'pt-br', 'Português Portugal': 'pt-pt',
+    'Romeno': 'ro', 'Russo': 'ru', 'Sérvio': 'sr', 'Eslovaco': 'sk', 'Esloveno': 'sl',
+    'Espanhol': 'es', 'Suaíli': 'sw', 'Sueco': 'sv', 'Tâmil': 'ta', 'Telugu': 'te',
+    'Tailandês': 'th', 'Turco': 'tr', 'Ucraniano': 'uk', 'Vietnamita': 'vi', 'Galês': 'cy'
+}
+
+# Lock para controle de execução
+fala_lock = threading.Lock()
+
+# Inicializar o motor de fala pyttsx3
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)
+engine.setProperty('voice', 'brazil')
+engine.setProperty('volume', 0.9)
+
+def falar(texto):
+    with fala_lock:
+        engine.say(texto)
+        engine.runAndWait()
+
+def reconhecer_comando():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        recognizer.adjust_for_ambient_noise(source)
+        falar("Estou ouvindo. Por favor, diga seu comando.")
+        try:
+            audio = recognizer.listen(source, timeout=5)
+            comando = recognizer.recognize_google(audio, language='pt-BR')
+            falar(f"Entendi que você disse: {comando}. Está correto?")
+            confirmacao = reconhecer_comando()
+            if confirmacao and ('sim' in confirmacao.lower() or 'correto' in confirmacao.lower()):
+                return comando.lower()
+            else:
+                falar("Desculpe, vamos tentar novamente.")
+                return None
+        except sr.WaitTimeoutError:
+            falar("Não ouvi nenhum comando. Vamos tentar de novo?")
+            return None
+        except sr.UnknownValueError:
+            falar("Não consegui entender. Pode repetir, por favor?")
+            return None
+        except sr.RequestError as e:
+            falar("Houve um problema ao processar sua fala. Podemos tentar novamente?")
+            return None
+
+def selecionar_idioma_por_voz():
+    while True:
+        falar("Por favor, diga o nome do idioma para o qual você gostaria de traduzir.")
+        comando = reconhecer_comando()
+        if comando:
+            for nome, codigo in idiomas.items():
+                if nome.lower() in comando:
+                    falar(f"Você selecionou {nome}. Está correto?")
+                    confirmacao = reconhecer_comando()
+                    if confirmacao and ('sim' in confirmacao.lower() or 'correto' in confirmacao.lower()):
+                        return codigo
+        falar("Desculpe, não reconheci esse idioma. Vamos tentar novamente?")
+
+def load_trained_model(model_path):
+    model = keras.models.load_model(model_path)
+    return model
+
+def preprocess_image(image):
+    resized_image = cv2.resize(image, (128, 128))
+    processed_image = resized_image / 255.0
+    return processed_image
+
+def convert_prediction_to_text(image):
+    text = pytesseract.image_to_string(image, lang='por', config=tessdata_dir_config)
+    return text
+
+def select_frame_por_voz(cap, result):
+    frame_selected = None
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            falar("Estou tendo dificuldades para capturar a imagem. Podemos tentar novamente?")
+            continue
+        cv2.imshow('frame', frame)
+
+        if result['comando']:
+            comando = result['comando']
+            result['comando'] = None
+            if comando and ("capturar" in comando or "enter" in comando):
+                falar("Você quer capturar esta imagem?")
+                confirmacao = reconhecer_comando()
+                if confirmacao and ('sim' in confirmacao.lower() or 'correto' in confirmacao.lower()):
+                    frame_selected = frame
+                    break
+            elif comando and ("sair" in comando or "finalizar" in comando):
+                falar("Você quer encerrar o programa?")
+                confirmacao = reconhecer_comando()
+                if confirmacao and ('sim' in confirmacao.lower() or 'correto' in confirmacao.lower()):
+                    result['fim'] = True
+                    break
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    return frame_selected
+
+def obter_comandos_de_voz(result):
+    while not result['fim']:
+        comando = reconhecer_comando()
+        if comando:
+            result['comando'] = comando
+
+# Boas-vindas
+falar("Olá! Bem-vindo ao SICOMUV, seu Sistema de Comunicação Multifuncional com Reconhecimento de Texto e Assistência por Voz para Inclusão Digital. Como posso ajudar você hoje?")
+
+# Selecionar idioma via comando de voz
+idioma_selecionado = selecionar_idioma_por_voz()
+
+# Informar sobre as opções após a seleção do idioma
+falar("Ótimo! Agora que selecionamos o idioma, você pode escolher entre capturar uma imagem para tradução ou encerrar o programa. O que você gostaria de fazer?")
+
+# Carregar o modelo treinado
+model_path = 'C:/Users/willi/Documents/COPIA FUNCIONAL - APRESENTAÇÃO/H5/H5.h5'
+model = load_trained_model(model_path)
+
+# Inicializar a câmera
+cap = cv2.VideoCapture(0)
+if not cap.isOpened():
+    cap = cv2.VideoCapture(1)
+    if not cap.isOpened():
+        falar("Estou tendo problemas para acessar a câmera. Pode verificar se ela está conectada corretamente?")
+        exit()
+
+# Dicionário para armazenar o resultado da thread de reconhecimento de voz
+result = {'comando': None, 'fim': False}
+
+# Iniciar a thread para obter comandos de voz
+thread = threading.Thread(target=obter_comandos_de_voz, args=(result,))
+thread.start()
+
+while True:
+    falar("Estou pronto para capturar uma imagem. Diga 'capturar' quando estiver preparado.")
+    selected_frame = select_frame_por_voz(cap, result)
+    if result['fim']:
+        break
+    if selected_frame is not None:
+        falar("Imagem capturada com sucesso. Estou processando, só um momento.")
+        gray = cv2.cvtColor(selected_frame, cv2.COLOR_BGR2GRAY)
+        processed_image = preprocess_image(gray)
+        input_image = np.expand_dims(processed_image, axis=0)
+        prediction = model.predict(input_image)
+
+        if prediction is not None:
+            text = convert_prediction_to_text(gray)
+            print("Texto detectado:", text)
+
+            falar("Iniciando a tradução do texto. Isso pode levar alguns segundos.")
+            translated_text = mtranslate.translate(text, idioma_selecionado, 'en')
+            print("Tradução:", translated_text)
+
+            if translated_text:
+                falar(f"Aqui está a tradução do texto: {translated_text}")
+
+        cv2.imshow('Imagem Capturada', selected_frame)
+
+falar("Estou encerrando o programa. Foi um prazer ajudar você hoje. Obrigado por usar o SICOMUV!")
+cap.release()
+cv2.destroyAllWindows()
+result['fim'] = True
+thread.join()

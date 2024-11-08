@@ -1,0 +1,9 @@
+opencv-python
+pytesseract
+numpy
+gTTS
+mtranslate
+tensorflow
+SpeechRecognition
+pyaudio
+pydub
