@@ -1,0 +1,149 @@
+Análise do Projeto: C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone
+
+Estrutura do Projeto:
+Total de arquivos: 27391
+Tipos de arquivos:
+  .h: 7015
+  : 6985
+  .py: 5494
+  .pyc: 5493
+  .inc: 584
+  .hpp: 554
+  .pyi: 311
+  .pyd: 173
+  .c: 135
+  .txt: 94
+  .proto: 94
+  .f90: 53
+  .exe: 40
+  .cc: 40
+  .csv: 30
+  .typed: 28
+  .lib: 25
+  .f: 21
+  .xml: 18
+  .sample: 14
+  .dll: 14
+  .html: 14
+  .htm: 12
+  .gif: 9
+  .js: 7
+  .pxd: 7
+  .def: 6
+  .idl: 5
+  .pyf: 5
+  .npy: 5
+  .asp: 5
+  .pys: 5
+  .h5: 4
+  .cfg: 4
+  .rst: 4
+  .tlb: 4
+  .md: 4
+  .pyx: 4
+  .pem: 3
+  .gz: 3
+  .build: 3
+  .ini: 3
+  .so: 3
+  .png: 3
+  .bmp: 3
+  .vbs: 3
+  .idx: 2
+  .pack: 2
+  .rev: 2
+  .pth: 2
+  .TXT: 2
+  .npz: 2
+  .APACHE: 2
+  .BSD: 2
+  .tmpl: 2
+  .in: 2
+  .HTM: 2
+  .bat: 2
+  .swp: 1
+  .whl: 1
+  .yaml: 1
+  .markdown-it: 1
+  .eigen: 1
+  .f95: 1
+  .template: 1
+  .pc: 1
+  .pkl: 1
+  .cpp: 1
+  .fits: 1
+  .json: 1
+  .pyw: 1
+  .bin: 1
+  .dict: 1
+  .params: 1
+  .zip: 1
+  .td: 1
+  .css: 1
+  .ico: 1
+  .rc: 1
+  .sct: 1
+  .xsl: 1
+  .ps1: 1
+
+Arquivos Importantes:
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\main.py:
+  Imports: import cv2, import pytesseract, import os, import numpy as np, import mtranslate
+  Funções: 
+  Classes: 
+  Comentário relevante: # Suprimir avisos...
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\pythoncom.py:
+  Imports: import pywintypes
+  Funções: 
+  Classes: 
+  Comentário relevante: # Magic utility that "redirects" to pythoncomXX.dll...
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\six.py:
+  Imports: from __future__ import absolute_import, import functools, import itertools, import operator, import sys
+  Funções: 
+  Classes: class X, class _LazyDescr, class MovedModule, class _LazyModule, class MovedAttribute
+  Comentário relevante: # Copyright (c) 2010-2020 Benjamin Peterson...
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\typing_extensions.py:
+  Imports: import abc, import collections, import collections.abc, import contextlib, import functools
+  Funções: 
+  Classes: class _Sentinel:, class _AnyMeta, class Any, class _ExtensionsSpecialForm, class Base:
+  Comentário relevante: # Super-special typing primitives....
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\absl\app.py:
+  Imports: import collections, import errno, import os, import pdb, import sys
+  Funções: 
+  Classes: class Error, class UsageError, class HelpFlag, class HelpshortFlag, class HelpfullFlag
+  Comentário relevante: # Copyright 2017 The Abseil Authors....
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\absl\command_name.py:
+  Imports: import os, import sys
+  Funções: 
+  Classes: 
+  Comentário relevante: # Copyright 2017 The Abseil Authors....
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\absl\__init__.py:
+  Imports: 
+  Funções: 
+  Classes: 
+  Comentário relevante: # Copyright 2017 The Abseil Authors....
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\absl\flags\argparse_flags.py:
+  Imports: import argparse, import sys, from absl import flags
+  Funções: 
+  Classes: class ArgumentParser, class _FlagAction, class _BooleanFlagAction, class _HelpFullAction
+  Comentário relevante: # Copyright 2018 The Abseil Authors....
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\absl\flags\_argument_parser.py:
+  Imports: import collections, import csv, import enum, import io, import string
+  Funções: 
+  Classes: class _ArgumentParserCache, class ArgumentParser, class ArgumentSerializer, class NumericParser, class FloatParser
+  Comentário relevante: # Copyright 2017 The Abseil Authors....
+
+C:\Users\willi\Documents\FACULDADE\10º SEMESTRE\PROJETO FINAL 2\VALIDAÇÃO MANUAL - WILLIAM - CODIGO TESTE\SICOMUV_Clone\new_venv\Lib\site-packages\absl\flags\_defines.py:
+  Imports: import enum, import sys, import types, import typing, from typing import Text, List, Any, TypeVar, Optional, Union, Type, Iterable, overload
+  Funções: 
+  Classes: class _FlagAlias
+  Comentário relevante: # Copyright 2017 The Abseil Authors....
