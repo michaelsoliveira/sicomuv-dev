@@ -9,15 +9,20 @@ import threading
 import pyttsx3
 from concurrent.futures import ThreadPoolExecutor
 import warnings
+from dotenv import load_dotenv
+import matplotlib.pyplot as plt 
+from deep_translator import GoogleTranslator
+
+load_dotenv()
 
 # Suprimir avisos
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Configuração do Tesseract
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-os.environ['TESSDATA_PREFIX'] = r'C:\Program Files\Tesseract-OCR\tessdata'
-tessdata_dir_config = '--tessdata-dir "C:\\Program Files\\Tesseract-OCR\\tessdata"'
+pytesseract.pytesseract.tesseract_cmd = f"{os.getenv('TESSPATH')}"
+os.environ['TESSDATA_PREFIX'] = f"{os.getenv('TESSDIR')}\\tessdata"
+tessdata_dir_config = f'--tessdata-dir "{os.getenv('TESSDIR')}\\tessdata"'
 
 # Dicionário de idiomas suportados (mantido como está)
 idiomas = {
@@ -27,7 +32,7 @@ idiomas = {
     'Grego': 'el', 'Gujarati': 'gu', 'Hebraico': 'he', 'Hindi': 'hi', 'Húngaro': 'hu',
     'Indonésio': 'id', 'Italiano': 'it', 'Japonês': 'ja', 'Javanês': 'jw', 'Coreano': 'ko',
     'Letão': 'lv', 'Lituano': 'lt', 'Malaio': 'ms', 'Marata': 'mr', 'Norueguês': 'no',
-    'Polonês': 'pl', 'Português (Brasil)': 'pt-br', 'Português Portugal': 'pt-pt',
+    'Polonês': 'pl', 'Português Brasil': 'pt', 'Portugues Portugal': 'pt-pt',
     'Romeno': 'ro', 'Russo': 'ru', 'Sérvio': 'sr', 'Eslovaco': 'sk', 'Esloveno': 'sl',
     'Espanhol': 'es', 'Suaíli': 'sw', 'Sueco': 'sv', 'Tâmil': 'ta', 'Telugu': 'te',
     'Tailandês': 'th', 'Turco': 'tr', 'Ucraniano': 'uk', 'Vietnamita': 'vi', 'Galês': 'cy'
@@ -44,17 +49,18 @@ def falar(texto):
     engine.runAndWait()
 
 def reconhecer_comando(timeout=3):
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        recognizer.adjust_for_ambient_noise(source, duration=0.2)
-        print("Ouvindo...")
-        try:
-            audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=5)
-            comando = recognizer.recognize_google(audio, language='pt-BR')
-            print(f"Comando reconhecido: {comando}")
-            return comando.lower()
-        except:
-            return None
+    while True:
+        recognizer = sr.Recognizer()
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(source, duration=0.3)
+            print("Ouvindo...")
+            try:
+                audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=5)
+                comando = recognizer.recognize_google(audio, language='pt-BR')
+                print(f"Comando reconhecido: {comando}")
+                return comando.lower()
+            except:
+                return None
 
 def selecionar_idioma_por_voz():
     falar("Por favor, me diga para qual idioma você gostaria de traduzir.")
@@ -76,7 +82,7 @@ def preprocess_image(image):
     return cv2.resize(image, (128, 128)) / 255.0
 
 def convert_prediction_to_text(image):
-    return pytesseract.image_to_string(image, lang='por', config=tessdata_dir_config)
+    return pytesseract.image_to_string(image)
 
 def select_frame_por_voz(cap, result):
     while True:
@@ -90,9 +96,8 @@ def select_frame_por_voz(cap, result):
             comando = result['comando']
             result['comando'] = None
             if "capturar" in comando or "enter" in comando:
-                falar("Certo, vou capturar esta imagem. Tudo bem para você?")
-                if reconhecer_comando() in ['sim', 'pode', 'ok', 'tudo bem']:
-                    return frame
+                falar("Certo, vou capturar esta imagem.")
+                return frame
             elif "sair" in comando or "finalizar" in comando:
                 falar("Você quer que eu encerre o programa?")
                 if reconhecer_comando() in ['sim', 'pode', 'ok', 'encerre']:
@@ -109,55 +114,67 @@ def obter_comandos_de_voz(result):
             result['comando'] = comando
 
 def processar_imagem(frame, model, idioma_selecionado):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    processed_image = preprocess_image(gray)
-    input_image = np.expand_dims(processed_image, axis=0)
-    prediction = model.predict(input_image)
+    try:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        processed_image = preprocess_image(gray)
+        input_image = np.expand_dims(processed_image, axis=0)
+        prediction = model.predict(input_image)
+        print(f"Prediction: {prediction}")
+        if prediction is not None:
+            text = convert_prediction_to_text(gray)
+            print("Texto detectado:", text)
 
-    if prediction is not None:
-        text = convert_prediction_to_text(gray)
-        print("Texto detectado:", text)
+            falar("Estou traduzindo o texto agora. Só um momento, por favor.")
+            # translated_text = mtranslate.translate(text, 'auto', idioma_selecionado)
+            # print("Tradução:", translated_text)
+            # print(f"Idioma: {idioma_selecionado}")
+            tradutor = GoogleTranslator(source="auto", target=idioma_selecionado)
+            translated_text = tradutor.translate(text)
+            print(f"Tradução: {translated_text}")
+            if translated_text:
+                falar(f"Aqui está a tradução: {translated_text}")
 
-        falar("Estou traduzindo o texto agora. Só um momento, por favor.")
-        translated_text = mtranslate.translate(text, idioma_selecionado, 'en')
-        print("Tradução:", translated_text)
-
-        if translated_text:
-            falar(f"Aqui está a tradução: {translated_text}")
-
-    cv2.imshow('Imagem Capturada', frame)
+        cv2.imshow('Imagem Capturada', frame)
+    except Exception as e:
+        print(e)
 
 def main():
     falar("Olá! Bem-vindo ao SICOMUV, seu assistente de comunicação e tradução. Como posso te ajudar hoje?")
+    
+    try:
+        idioma_selecionado = None
+        while not idioma_selecionado:
+            idioma_selecionado = selecionar_idioma_por_voz()
+        falar("Ótimo! Agora que escolhemos o idioma, você pode me pedir para capturar uma imagem ou encerrar o programa. O que você prefere?")
+        print(f"Idioma fora da função: {idioma_selecionado}")
+        # Corrigindo o caminho do modelo
+        model_path = f"{os.getcwd()}\\dataset\\train.h5"
+        model = load_trained_model(model_path)
 
-    idioma_selecionado = selecionar_idioma_por_voz()
-    falar("Ótimo! Agora que escolhemos o idioma, você pode me pedir para capturar uma imagem ou encerrar o programa. O que você prefere?")
-
-    # Corrigindo o caminho do modelo
-    model_path = f"{os.getcwd()}/dataset/train.h5"
-    model = load_trained_model(model_path)
-
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        cap = cv2.VideoCapture(1)
+        cap = cv2.VideoCapture(0)
         if not cap.isOpened():
-            falar("Estou com problemas para acessar a câmera. Pode verificar se ela está conectada corretamente?")
-            return
+            cap = cv2.VideoCapture(1)
+            if not cap.isOpened():
+                falar("Estou com problemas para acessar a câmera. Pode verificar se ela está conectada corretamente?")
+                return
 
-    result = {'comando': None, 'fim': False}
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        executor.submit(obter_comandos_de_voz, result)
+        result = {'comando': None, 'fim': False}
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            executor.submit(obter_comandos_de_voz, result)
 
-        while not result['fim']:
-            falar("Estou pronto para capturar uma imagem. Diga 'capturar' quando quiser.")
-            selected_frame = select_frame_por_voz(cap, result)
-            if result['fim']:
-                break
-            if selected_frame is not None:
-                falar("Imagem capturada! Estou processando, só um instante.")
-                processar_imagem(selected_frame, model, idioma_selecionado)
-
-    falar("Estou encerrando o programa. Foi um prazer ajudar você hoje. Obrigado por usar o SICOMUV!")
+            while not result['fim']:
+                falar("Estou pronto para capturar uma imagem. Diga 'capturar' quando quiser.")
+                selected_frame = select_frame_por_voz(cap, result)
+                if result['fim']:
+                    break
+                if selected_frame is not None:
+                    falar("Imagem capturada! Estou processando, só um instante.")
+                    plt.imshow(selected_frame)
+                    processar_imagem(selected_frame, model, idioma_selecionado)
+                    result['fim'] = True
+        falar("Estou encerrando o programa. Foi um prazer ajudar você hoje. Obrigado por usar o SICOMUV!")
+    except Exception as e:
+        print(e)
     cap.release()
     cv2.destroyAllWindows()
 

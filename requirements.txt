@@ -7,3 +7,5 @@ tensorflow
 SpeechRecognition
 pyaudio
 pydub
+deep-translator
+matplotlib
