@@ -29,11 +29,16 @@ load_dotenv()
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+tesseract_path=os.getenv('TESSPATH')
+tessdata_dir=os.getenv('TESSDIR')
+
 # Configuração do Tesseract
 pytesseract.pytesseract.tesseract_cmd = os.getenv('TESSPATH')
 os.environ['TESSDATA_PREFIX'] = f"{os.getenv('TESSDIR')}\\tessdata"
-tessdata_dir_config = f'--tessdata-dir "{os.getenv("TESSDIR")}\\tessdata"'
-pytesseract.pytesseract.tesseract_cmd = f"{os.getenv('TESSPATH')}\\
+tessdata_dir_config = f'--tessdata-dir {os.getenv("TESSDIR")}\\tessdata'
+pytesseract.pytesseract.tesseract_cmd = f"{os.getenv('TESSPATH')}"
+
+
 
 if not tesseract_path or not tessdata_dir:
     logging.error("As variáveis de ambiente TESSPATH e TESSDIR devem ser definidas no arquivo .env")
