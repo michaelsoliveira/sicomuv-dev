@@ -9,3 +9,6 @@ pyaudio
 pydub
 deep-translator
 matplotlib
+pyttsx3
+python-dotenv
+dotenv

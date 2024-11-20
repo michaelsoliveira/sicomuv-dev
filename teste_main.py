@@ -4,23 +4,52 @@ import os
 import numpy as np
 import keras.models
 import speech_recognition as sr
-import threading
 import pyttsx3
 from concurrent.futures import ThreadPoolExecutor
 import warnings
 from dotenv import load_dotenv
-import matplotlib.pyplot as plt 
-from deep_translator import GoogleTranslator
+import logging
+import sys
+import importlib
 
+# Verificação de dependências
+dependencies = ['cv2', 'pytesseract', 'numpy', 'keras', 'speech_recognition', 'pyttsx3', 'dotenv', 'matplotlib', 'deep_translator']
+for module in dependencies:
+    if importlib.util.find_spec(module) is None:
+        print(f"Erro: A biblioteca {module} não está instalada. Por favor, instale-a usando 'pip install {module}'")
+        sys.exit(1)
+
+# Configuração de logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Carregar variáveis de ambiente
 load_dotenv()
 
+# Suprimir avisos
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+# Configuração do Tesseract
 pytesseract.pytesseract.tesseract_cmd = os.getenv('TESSPATH')
 os.environ['TESSDATA_PREFIX'] = f"{os.getenv('TESSDIR')}\\tessdata"
 tessdata_dir_config = f'--tessdata-dir "{os.getenv("TESSDIR")}\\tessdata"'
+pytesseract.pytesseract.tesseract_cmd = f"{os.getenv('TESSPATH')}\\
 
+if not tesseract_path or not tessdata_dir:
+    logging.error("As variáveis de ambiente TESSPATH e TESSDIR devem ser definidas no arquivo .env")
+    print("Por favor, configure as variáveis de ambiente TESSPATH e TESSDIR no arquivo .env")
+    sys.exit(1)
+
+if not os.path.exists(tesseract_path):
+    logging.error(f"O caminho do Tesseract não existe: {tesseract_path}")
+    print(f"O caminho do Tesseract especificado não existe. Por favor, verifique o caminho: {tesseract_path}")
+    sys.exit(1)
+
+pytesseract.pytesseract.tesseract_cmd = tesseract_path
+os.environ['TESSDATA_PREFIX'] = os.path.join(tessdata_dir, "tessdata")
+tessdata_dir_config = f'--tessdata-dir "{tessdata_dir}\\tessdata"'
+
+# Dicionário de idiomas suportados
 idiomas = {
     'Afrikaans': 'af', 'Árabe': 'ar', 'Bengali': 'bn', 'Cantonês': 'yue', 'Catalão': 'ca',
     'Chinês': 'zh-tw', 'Croata': 'hr', 'Checo': 'cs', 'Dinamarquês': 'da', 'Holandês': 'nl',
@@ -34,32 +63,38 @@ idiomas = {
     'Tailandês': 'th', 'Turco': 'tr', 'Ucraniano': 'uk', 'Vietnamita': 'vi', 'Galês': 'cy'
 }
 
+# Inicializar o motor de fala pyttsx3
 engine = pyttsx3.init()
-engine.setProperty('rate', 180)
+engine.setProperty('rate', 195)
 engine.setProperty('voice', 'brazil')
-engine.setProperty('volume', 1.0)
+engine.setProperty('volume', 2.0)
 
 def falar(texto):
-    print(f"Assistente: {texto}")
+    logging.info(f"Assistente: {texto}")
     engine.say(texto)
     engine.runAndWait()
 
-def reconhecer_comando(timeout=5):
+def reconhecer_comando(timeout=5, max_tentativas=3):
     recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        recognizer.adjust_for_ambient_noise(source, duration=0.3)
-        print("Ouvindo...")
-        try:
-            audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=5)
-            comando = recognizer.recognize_google(audio, language='pt-BR')
-            print(f"Comando reconhecido: {comando}")
-            return comando.lower()
-        except sr.WaitTimeoutError:
-            print("Tempo de espera excedido.")
-        except sr.UnknownValueError:
-            print("Não foi possível entender o áudio.")
-        except sr.RequestError as e:
-            print(f"Erro na requisição ao serviço de reconhecimento de fala; {e}")
+    for tentativa in range(max_tentativas):
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(source, duration=0.3)
+            logging.info(f"Ouvindo... (Tentativa {tentativa + 1})")
+            try:
+                audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=5)
+                comando = recognizer.recognize_google(audio, language='pt-BR')
+                logging.info(f"Comando reconhecido: {comando}")
+                return comando.lower()
+            except sr.WaitTimeoutError:
+                logging.warning("Tempo de espera excedido.")
+            except sr.UnknownValueError:
+                logging.warning("Não foi possível entender o áudio.")
+            except sr.RequestError as e:
+                logging.error(f"Erro na requisição ao serviço de reconhecimento de fala; {e}")
+                falar("Desculpe, estou tendo problemas para me conectar ao serviço de reconhecimento de voz. Por favor, verifique sua conexão com a internet.")
+                return None
+    
+    falar("Desculpe, não consegui entender. Pode repetir, por favor?")
     return None
 
 def selecionar_idioma_por_voz():
@@ -76,17 +111,25 @@ def selecionar_idioma_por_voz():
         falar("Desculpe, não consegui identificar o idioma. Vamos tentar novamente?")
 
 def load_trained_model(model_path):
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"O arquivo do modelo não existe: {model_path}")
     try:
         return keras.models.load_model(model_path)
     except Exception as e:
-        print(f"Erro ao carregar o modelo: {e}")
-        return None
+        raise RuntimeError(f"Erro ao carregar o modelo: {e}")
 
 def preprocess_image(image):
     return cv2.resize(image, (128, 128)) / 255.0
 
 def convert_prediction_to_text(image):
     return pytesseract.image_to_string(image, config=tessdata_dir_config)
+
+def inicializar_camera():
+    for i in range(3):  # Tenta as câmeras 0, 1 e 2
+        cap = cv2.VideoCapture(i)
+        if cap.isOpened():
+            return cap
+    raise RuntimeError("Não foi possível acessar nenhuma câmera.")
 
 def select_frame_por_voz(cap, result):
     while True:
@@ -117,31 +160,45 @@ def obter_comandos_de_voz(result):
         if comando:
             result['comando'] = comando
 
+def traduzir_texto(texto, idioma_destino):
+    if not texto.strip():
+        return "Nenhum texto detectado para tradução."
+    
+    try:
+        tradutor = GoogleTranslator(source="auto", target=idioma_destino)
+        texto_traduzido = tradutor.translate(texto)
+        return texto_traduzido
+    except Exception as e:
+        logging.error(f"Erro na tradução: {e}")
+        return f"Erro na tradução. Por favor, verifique sua conexão com a internet."
+
 def processar_imagem(frame, model, idioma_selecionado):
     try:
+        if frame is None or frame.size == 0:
+            falar("A imagem capturada não é válida. Vamos tentar novamente.")
+            return
+
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         processed_image = preprocess_image(gray)
         input_image = np.expand_dims(processed_image, axis=0)
         prediction = model.predict(input_image)
-        print(f"Prediction: {prediction}")
-        if prediction is not None:
-            text = convert_prediction_to_text(gray)
-            print("Texto detectado:", text)
+        logging.info(f"Prediction: {prediction}")
+        
+        text = convert_prediction_to_text(gray)
+        logging.info(f"Texto detectado: {text}")
 
-            if text.strip():
-                falar("Estou traduzindo o texto agora. Só um momento, por favor.")
-                tradutor = GoogleTranslator(source="auto", target=idioma_selecionado)
-                translated_text = tradutor.translate(text)
-                print(f"Tradução: {translated_text}")
-                if translated_text:
-                    falar(f"Aqui está a tradução: {translated_text}")
-            else:
-                falar("Não detectei nenhum texto na imagem.")
+        if text.strip():
+            falar("Estou traduzindo o texto agora. Só um momento, por favor.")
+            translated_text = traduzir_texto(text, idioma_selecionado)
+            logging.info(f"Tradução: {translated_text}")
+            falar(f"Aqui está a tradução: {translated_text}")
+        else:
+            falar("Não detectei nenhum texto na imagem.")
 
         cv2.imshow('Imagem Capturada', frame)
     except Exception as e:
-        print(f"Erro ao processar imagem: {e}")
-        falar("Ocorreu um erro ao processar a imagem.")
+        logging.error(f"Erro ao processar imagem: {e}")
+        falar("Ocorreu um erro ao processar a imagem. Vamos tentar novamente.")
 
 def main():
     falar("Olá! Bem-vindo ao SICOMUV, seu assistente de comunicação e tradução. Como posso te ajudar hoje?")
@@ -151,23 +208,23 @@ def main():
         while not idioma_selecionado:
             idioma_selecionado = selecionar_idioma_por_voz()
         falar("Ótimo! Agora que escolhemos o idioma, você pode me pedir para capturar uma imagem ou encerrar o programa. O que você prefere?")
-        print(f"Idioma selecionado: {idioma_selecionado}")
+        logging.info(f"Idioma selecionado: {idioma_selecionado}")
 
         model_path = os.path.join(os.getcwd(), "dataset", "train.h5")
-        model = load_trained_model(model_path)
-        if model is None:
-            falar("Não foi possível carregar o modelo. O programa será encerrado.")
+        try:
+            model = load_trained_model(model_path)
+        except (FileNotFoundError, RuntimeError) as e:
+            falar(f"Erro ao carregar o modelo: {e}")
             return
 
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            cap = cv2.VideoCapture(1)
-            if not cap.isOpened():
-                falar("Estou com problemas para acessar a câmera. Pode verificar se ela está conectada corretamente?")
-                return
+        try:
+            cap = inicializar_camera()
+        except RuntimeError as e:
+            falar(str(e))
+            return
 
         result = {'comando': None, 'fim': False}
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             executor.submit(obter_comandos_de_voz, result)
 
             while not result['fim']:
@@ -179,8 +236,10 @@ def main():
                     falar("Imagem capturada! Estou processando, só um instante.")
                     processar_imagem(selected_frame, model, idioma_selecionado)
         falar("Estou encerrando o programa. Foi um prazer ajudar você hoje. Obrigado por usar o SICOMUV!")
+    except KeyboardInterrupt:
+        falar("Programa interrompido pelo usuário.")
     except Exception as e:
-        print(f"Erro inesperado: {e}")
+        logging.error(f"Erro inesperado: {e}")
         falar("Ocorreu um erro inesperado. O programa será encerrado.")
     finally:
         if 'cap' in locals():
