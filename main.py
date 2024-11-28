@@ -34,8 +34,8 @@ tessdata_dir=os.getenv('TESSDIR')
 
 # Configuração do Tesseract
 pytesseract.pytesseract.tesseract_cmd = os.getenv('TESSPATH')
-os.environ['TESSDATA_PREFIX'] = f"{os.getenv('TESSDIR')}\\tessdata\\"
-tessdata_dir_config = f'--tessdata-dir {os.getenv("TESSDIR")}\\tessdata\\'
+os.environ['TESSDATA_PREFIX'] = f"{os.getenv('TESSDIR')}\\tessdata"
+tessdata_dir_config = f'--tessdata-dir {os.getenv("TESSDIR")}\\tessdata'
 pytesseract.pytesseract.tesseract_cmd = f"{os.getenv('TESSPATH')}"
 
 
