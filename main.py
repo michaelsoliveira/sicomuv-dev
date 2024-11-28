@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import logging
 import sys
 import importlib
+from deep_translator import GoogleTranslator
 
 # Verificação de dependências
 dependencies = ['cv2', 'pytesseract', 'numpy', 'keras', 'speech_recognition', 'pyttsx3', 'dotenv', 'matplotlib', 'deep_translator']
@@ -50,9 +51,9 @@ if not os.path.exists(tesseract_path):
     print(f"O caminho do Tesseract especificado não existe. Por favor, verifique o caminho: {tesseract_path}")
     sys.exit(1)
 
-pytesseract.pytesseract.tesseract_cmd = tesseract_path
-os.environ['TESSDATA_PREFIX'] = os.path.join(tessdata_dir, "tessdata")
-tessdata_dir_config = f'--tessdata-dir "{tessdata_dir}\\tessdata"'
+# pytesseract.pytesseract.tesseract_cmd = tesseract_path
+# os.environ['TESSDATA_PREFIX'] = os.path.join(tessdata_dir, "tessdata")
+# tessdata_dir_config = f'--tessdata-dir "{tessdata_dir}\\tessdata"'
 
 # Dicionário de idiomas suportados
 idiomas = {
@@ -127,7 +128,7 @@ def preprocess_image(image):
     return cv2.resize(image, (128, 128)) / 255.0
 
 def convert_prediction_to_text(image):
-    return pytesseract.image_to_string(image, config=tessdata_dir_config)
+    return pytesseract.image_to_string(image)
 
 def inicializar_camera():
     for i in range(3):  # Tenta as câmeras 0, 1 e 2
