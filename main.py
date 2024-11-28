@@ -55,7 +55,7 @@ def reconhecer_comando(timeout=3):
             recognizer.adjust_for_ambient_noise(source, duration=0.3)
             print("Ouvindo...")
             try:
-                audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=5)
+                audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=4)
                 comando = recognizer.recognize_google(audio, language='pt-BR')
                 print(f"Comando reconhecido: {comando}")
                 return comando.lower()
@@ -68,10 +68,8 @@ def selecionar_idioma_por_voz():
     if comando:
         for nome, codigo in idiomas.items():
             if nome.lower() in comando:
-                falar(f"Entendi que você quer traduzir para {nome}. Isso está correto?")
-                confirmacao = reconhecer_comando()
-                if confirmacao and ('sim' in confirmacao or 'correto' in confirmacao):
-                    return codigo
+                falar(f"Entendi que você quer traduzir para {nome}")
+                return codigo
     else:
         falar("Desculpe, não consegui identificar o idioma. Vamos tentar novamente?")
 
@@ -125,9 +123,6 @@ def processar_imagem(frame, model, idioma_selecionado):
             print("Texto detectado:", text)
 
             falar("Estou traduzindo o texto agora. Só um momento, por favor.")
-            # translated_text = mtranslate.translate(text, 'auto', idioma_selecionado)
-            # print("Tradução:", translated_text)
-            # print(f"Idioma: {idioma_selecionado}")
             tradutor = GoogleTranslator(source="auto", target=idioma_selecionado)
             translated_text = tradutor.translate(text)
             print(f"Tradução: {translated_text}")
